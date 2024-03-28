@@ -4,10 +4,13 @@ metadata:
   name: mc-vanilla
   labels:
    app: minecraft
+  annotations:
+    mc-router.itzg.me/externalServerName: >YOUR DESIRED HOST NAMES HERE< #I recommend >server name<.>your public ip<.nip.io
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
   - port: 25565
-    nodePort: 30000
+    targetPort: 25565
+    protocol: TCP
   selector:
     app: minecraft

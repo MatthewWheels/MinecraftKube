@@ -1,0 +1,88 @@
+# mc-router
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mc-router
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: services-watcher
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["watch","list"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "statefulsets/scale"]
+  verbs: ["watch","list","get","update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mc-router-services-watcher
+subjects:
+- kind: ServiceAccount
+  name: mc-router
+  namespace: minecraft
+roleRef:
+  kind: ClusterRole
+  name: services-watcher
+  apiGroup: rbac.authorization.k8s.io
+# Use whatever tcp ingress method you want I just used a node port here for simplicity
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mc-router
+spec:
+  type: NodePort
+  externalIPs:
+    - >YOUR HOST'S EXTERNAL IP HERE<
+  ports:
+  - targetPort: web
+    name: web
+    port: 8080
+    nodePort: 30001
+  - targetPort: proxy
+    name: proxy
+    port: 25565
+    nodePort: 30000 #port to connect to your minecraft servers from
+  selector:
+    run: mc-router
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: mc-router
+  name: mc-router
+spec:
+  selector:
+    matchLabels:
+      run: mc-router
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        run: mc-router
+    spec:
+      serviceAccountName: mc-router
+      containers:
+      - image: itzg/mc-router
+        imagePullPolicy: Always
+        name: mc-router
+        args: ["--api-binding", ":8080", "--in-kube-cluster"]
+        ports:
+        - name: proxy
+          containerPort: 25565
+        - name: web
+          containerPort: 8080
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: "100m"
+          limits:
+            memory: 100Mi
+            cpu: "250m"
