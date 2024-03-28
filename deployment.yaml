@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: minecraft-deployment
+ labels:
+  app: minecraft
+spec:
+ replicas: 1
+ selector:
+  matchLabels:
+   app: minecraft
+ template:
+  metadata:
+   labels:
+    app: minecraft
+  spec:
+   volumes:
+   - name: minecraft-data
+     persistentVolumeClaim:
+      claimName: minecraft-data-pvc
+   containers:
+   - name: minecraft
+     image: itzg/minecraft-server:latest
+     resources:
+      limits:
+       memory: 12Gi
+      requests:
+       memory: 4Gi
+     env:
+      - name: EULA
+        value: 'TRUE'
+      - name: MODE
+        value: 'survival'
+      - name: SERVER_NAME
+        value: '>YOUR SERVER NAME HERE<'
+      - name: MOTD
+        value: '>YOUR MOTD HERE<'
+      - name: ALLOW_FLIGHT
+        value: 'TRUE'
+      - name: MAX_PLAYERS
+        value: '10'
+      - name: OPS
+        value: '>YOUR USERNAME HERE<'
+     ports:
+     - containerPort: 25565
+       name: minecraft
+     volumeMounts:
+      - name: minecraft-data
+        mountPath: /data
+     readinessProbe:
+      exec:
+       command:
+       - mcstatus
+       - 127.0.0.1
+       - ping
+      initialDelaySeconds: 30
+      periodSeconds: 30
+     livenessProbe:
+      exec:
+       command:
+       - mcstatus
+       - 127.0.0.1
+       - ping
+      initialDelaySeconds: 30
+      periodSeconds: 30

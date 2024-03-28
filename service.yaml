@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mc-vanilla
+  labels:
+   app: minecraft
+spec:
+  type: NodePort
+  ports:
+  - port: 25565
+    nodePort: 30000
+  selector:
+    app: minecraft
