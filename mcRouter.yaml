@@ -37,8 +37,6 @@ metadata:
   name: mc-router
 spec:
   type: NodePort
-  externalIPs:
-    - >YOUR HOST'S EXTERNAL IP HERE<
   ports:
   - targetPort: web
     name: web
