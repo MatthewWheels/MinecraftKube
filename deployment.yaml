@@ -1,31 +1,46 @@
+#which API we're communicating with and what type of kube resource we're making
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+# deployment name
  name: minecraft-deployment
+ #labels to identify this as MC by kubernetes so we can match it with other resources needed to complete functionality
  labels:
   app: minecraft
 spec:
+#amount of minecraft server containers we want spun up
  replicas: 1
  selector:
+ #tells kube to match it up with other components with the minecraft label
   matchLabels:
    app: minecraft
  template:
   metadata:
+  #give the pod itself the minecraft label
    labels:
     app: minecraft
   spec:
+  # this tells the pod that it will use a volume named minecraft-data and use the minecraft-data-pvc to claim a persistent volume so the world persists after the container is destroyed
    volumes:
    - name: minecraft-data
      persistentVolumeClaim:
       claimName: minecraft-data-pvc
    containers:
+   #this is the actual container information
+   #we named the container minecraft
    - name: minecraft
+   #this is the image that the container runs
      image: itzg/minecraft-server:latest
+     #these are the resource specificcations we're giving the server
      resources:
+     #at most it can access 12 gigabytes of memory
       limits:
        memory: 12Gi
+     #we're quarantining off 4 Gigabytes to always be available for the server
       requests:
        memory: 4Gi
+     #these are environment variables we give the container to run with
+     # the EULA one is required but the rest are optional. Follow this doc to see what env variables can be set:https://docker-minecraft-server.readthedocs.io/en/latest/configuration/server-properties/
      env:
       - name: EULA
         value: 'TRUE'
@@ -41,25 +56,25 @@ spec:
         value: '10'
       - name: OPS
         value: '>YOUR USERNAME HERE<'
+    # this the the port that we open on the container itself that the process inside communicates on
      ports:
      - containerPort: 25565
        name: minecraft
+    # this is the container volume we are going to mount to. Combining this with the persistent volume allows the container to write to the nodes storage so this volume persists after container deletion
      volumeMounts:
       - name: minecraft-data
         mountPath: /data
+    # The readiness probe tells kubernetes how to check when the container is ready to recieve traffic and how often to do so
      readinessProbe:
-      exec:
-       command:
-       - mcstatus
-       - 127.0.0.1
-       - ping
-      initialDelaySeconds: 30
-      periodSeconds: 30
+        exec:
+          command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+        # Give it i + p * f seconds to be ready, so 120 seconds
+        initialDelaySeconds: 20
+        periodSeconds: 5
+        failureThreshold: 20
+    # this livenessProbe tell kubernetes how to check when the container is in a failed state. If found to be in a failed state then kill the container. 
      livenessProbe:
-      exec:
-       command:
-       - mcstatus
-       - 127.0.0.1
-       - ping
-      initialDelaySeconds: 30
-      periodSeconds: 30
+        exec:
+          command: ["/usr/local/bin/mc-monitor", "status", "--host", "localhost"]
+        initialDelaySeconds: 120
+        periodSeconds: 60

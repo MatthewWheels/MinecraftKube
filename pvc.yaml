@@ -1,13 +1,18 @@
+#This is a claim to the minecraft-data persistent volume. Once a PV is made we need to have a pod claim it for it to be used
 kind: PersistentVolumeClaim
 apiVersion: v1
+#See deployment for more info abount metadata. Really just info for how kubernetes can reference the server
 metadata:
   name: minecraft-data-pvc
   labels:
    app: minecraft
 spec:
+#this tells kubernetes we are claiming a volume on the host machine itself
   storageClassName: local-storage
+#This says that only a single pod can be mounted to the volume at a time
   accessModes:
     - ReadWriteOnce
+#How large of the storage we want to claim, in this case 10 gigabytes of storage
   resources:
     requests:
       storage: 10Gi

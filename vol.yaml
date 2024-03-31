@@ -1,20 +1,29 @@
+#This is the actual volume on the host that persists after the container is deleted. 
 apiVersion: v1
 kind: PersistentVolume
+#See deployment yaml for more info on metadata. Basically just how kubernetes references the deployment. 
 metadata:
  name: minecraft-data
  labels:
   app: minecraft
 spec:
+  #The size of the volume (10 gigabytes in this case)
   capacity:
     storage: 10Gi
+  #This means that when mounted to a pod it is mounted into a directory
   volumeMode: Filesystem
+  #Only one pod can have access to the volume at a time
   accessModes:
   - ReadWriteOnce
+  #This means that when the claim is deleted the persistent volume is also removed. This does not mean the data inside is removed, just that the volume definition in kubernetes is
   persistentVolumeReclaimPolicy: Delete
   storageClassName: local-storage
   local:
+   #This is the path on the host which the volume can be found on (in the case of minecraft where we want the world data saved)
    path: >YOUR SERVER FILEPATH HERE<
+  #This tells kubernetes which nodes it can find the volume on.
   nodeAffinity:
+  #This basically says that in order to create the volume the hostname of the node it is being deployed to must be eaqual to one of the values at the bottom (can have multiple but we are doing just 1 for this)
    required:
     nodeSelectorTerms:
     - matchExpressions:

@@ -1,16 +1,32 @@
+#This creates a service for us to access our pod
 apiVersion: v1
 kind: Service
+# see deployment yaml for a larger explanation on the first two items here. Basically just some items telling kubernetes how we reference the below
 metadata:
   name: mc-vanilla
   labels:
    app: minecraft
+#This tells mc-router what the user inputs as the host name to connect (minus the port). Typically the formatting is as follows
+# >minecraft server name(AKA subdomain)<.>Domain name/ip the server is being hosted on< by using that formatting you could host multiple minecraft servers on the same host+port so to connect users just need to add the minecraft server name to the front
+# let's say that to connect to your server you want users to enter a sample based on the above line's example and enter on port 30000 with a server name of WheelieCool and your host's ip address of 123.123.123.123
+# in minecraft they would enter this for the server address WheelieCool.123.123.123.123:3000.
+# in this annotation you would put WheelieCool.123.123.123.123 anyone using the mentioned server address would be routed to the server as long as the network configs are set up right. 
+#NOTE: This must be an exact match to what the user enters in for the address, excluding the port. If your user enters a domain name instead of an ip then that must be reflected in the annotation. 
   annotations:
-    mc-router.itzg.me/externalServerName: >YOUR DESIRED HOST NAMES HERE< #I recommend >server name<.>your public ip<.nip.io
+    mc-router.itzg.me/externalServerName: >YOUR DESIRED HOST NAMES HERE< #I recommend >server name<.>your public ip<
 spec:
+#The loadbalancer service type allows us to balance the load (user connections) between multiple pods based on rules. 
+#In this case the rule is the subdomain used in the hostname above for connection. 
   type: LoadBalancer
   ports:
+  #Port is the container port that we're looking for that's been exposed
   - port: 25565
+    #Target port is the port on the cluster that we want to use for communication (this is not the port that users connnect to the cluster with.)
+    #In our deployment here what happens when a user connects is that first they connect to the node on port 30000. This brings them to the mc-router pod. The router looks at the hostname it was given and then routes it based on the annotations seen in the above service here.
+    #If it finds a backend service with a hostname that EXACTLY matches, it sends the traffice over to the specifed service on the target port. The target port is then routed over to the container's port specified above
     targetPort: 25565
+    #this says we will only accept TCP based traffic and not UDP, or HTTP(S)
     protocol: TCP
+  #Tells kubnernetes that we only hook this service up to containers with the minecraft label. 
   selector:
     app: minecraft
