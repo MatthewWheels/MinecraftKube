@@ -2,6 +2,8 @@ This is a set of manifests to deploy the most recent version of itzg's vanilla m
 
 The way this works is that there are 2 main processes running for this. You have your minecraft servers and the mc-router. The router is responsible for receiving traffic on port `30000` and then routing that traffice based on the recieved hostname to the appropriate minecraft server. The minecraft server itself hosts the game that the player connects to. Using a PVC we allow for the world data to persist after pod deletion. Additionally the router and service annotation system allow us to host multiple minecraft servers while only exposing a single port on the node. 
 
+The yamls themselves have a section by section description as well for what each item does with the exception of the mc-router currently. For MC-router for now refer to itzg's github page linked below. 
+
 - uses nodeport exposed on port: `30000`
 - routes based on hostname which is specified on the loadbalancer service for the minecraft server pod's annotation.
 - server files persist on pod deletion
